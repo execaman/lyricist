@@ -1,0 +1,36 @@
+{
+  "name": "@execaman/lyricist",
+  "version": "1.0.0",
+  "main": "./lib/index.js",
+  "types": "./lib/types/index.d.ts",
+  "files": [
+    "lib"
+  ],
+  "dependencies": {
+    "axios": "^1.6.7",
+    "cheerio": "^1.0.0-rc.12",
+    "user-agents": "^1.1.133"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@types/user-agents": "^1.0.4",
+    "typescript": "^5.3.3"
+  },
+  "description": "A lyric-fetcher that crawls the web, custom plugin support, no additional stuff required",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/execaman/lyricist.git"
+  },
+  "keywords": [
+    "lyrics",
+    "lyrics-api",
+    "lyric-fetcher",
+    "scraper"
+  ],
+  "author": "Aman",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/execaman/lyricist/issues"
+  },
+  "homepage": "https://github.com/execaman/lyricist#readme"
+}
