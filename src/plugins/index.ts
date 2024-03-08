@@ -6,3 +6,8 @@ export * from "./sources/genius";
 export * from "./sources/musixmatch";
 export * from "./sources/songlyrics";
 export * from "./sources/kkbox";
+export * from "./sources/karaoke-lyrics";
+export * from "./sources/lyrics";
+export * from "./sources/mojim";
+export * from "./sources/saregama";
+export * from "./sources/absolutelyrics";
