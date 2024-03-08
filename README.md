@@ -24,7 +24,7 @@ So a function name like `karaoke__lyrics_com` would translate to `karaoke-lyrics
 <p>To write one yourself, you must know how it should behave:</p>
 
 - Do not use try-catch blocks, keep it simple
-- `throw` anything or reject as you know the result would eventually be invalid
+- reject or `throw` anything as soon as you realise the result could be invalid
 
 ### Resources
 
