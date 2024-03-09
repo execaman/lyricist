@@ -1,18 +1,41 @@
+## Import
+
+```js
+// ES Modules
+import { Lyricist } from "@execaman/lyricist";
+
+// Common JS
+const { Lyricist } = require("@execaman/lyricist");
+```
+
+## Configure
+
+```js
+const lyrics = new Lyricist({
+  // An array of async scraper functions
+  // Read the last section for more info
+  plugins: [],
+
+  // Whether to save last successful
+  // fetch results. default is false
+  saveLastResult: false
+});
+```
+
 ## Usage
 
 ```js
-import { Lyricist } from "@execaman/lyricist"; // ESM
-const { Lyricist } = require("@execaman/lyricist"); // CJS
+// Keep it short, around 30
+// characters in length
+const query = "calma remix";
 
-const lyrics = new Lyricist();
+// Number of attempts to make
+// if Google doesn't have the lyric
+const attempt = 3;
 
-lyrics.fetch("calma remix").then(console.log).catch(console.error);
+// Make a request
+const result = await lyrics.fetch(query, attempt);
 ```
-
-### Fetch parameters:
-
-1). `query` (string) - no need to write "lyrics" at the end<br>
-2). `attempt` (number) - number of results to attempt and scrape if google doesn't have the lyrics
 
 <details>
 <summary>Sample Response</summary>

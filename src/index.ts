@@ -6,25 +6,39 @@ import * as built_in_plugins from "./plugins";
 
 export type LyricScraper = (url: string, userAgent: string) => Promise<string>;
 
+/** Options to configure {@link Lyricist} */
 export interface LyricOptions {
+  /** An array of async scraper functions. [learn more](https://github.com/execaman/lyricist?tab=readme-ov-file#writing-your-own-plugin) */
   plugins?: LyricScraper[];
+  /** Whether to save last successful fetch result */
+  saveLastResult?: boolean;
 }
 
+/** An object of the platform that streams this song */
 export interface LyricStream {
+  /** Name of the platform that streams this song */
   source: string;
+  /** Direct URL to the song on this platform */
   stream: string;
 }
 
+/** Additional info on the song based on SERP */
 export interface LyricInfo {
+  /** Label of a info field */
   label: string;
+  /** Value of that info field */
   value: string;
 }
 
+/** Source of the lyrics provider */
 export interface LyricSource {
+  /** Name of the source of this lyric */
   name: string;
+  /** A URL to the source of this lyric */
   url: string;
 }
 
+/** A successful fetch result */
 export interface LyricResult {
   meta?: LyricInfo[];
   listen?: LyricStream[];
@@ -33,13 +47,19 @@ export interface LyricResult {
 }
 
 export class Lyricist {
+  /** A map of all available plugins */
   plugins = new Map<string, LyricScraper>();
 
-  lastCall?: number;
-  randomUserAgent = new UserAgent({ deviceCategory: "desktop" }).random;
+  #saveLastResult?: boolean;
+  #lastCall?: number;
+
+  /** Last successful fetch result if {@link LyricOptions.saveLastResult} was enabled */
+  lastResult?: LyricResult;
+
+  #randomUserAgent = new UserAgent({ deviceCategory: "desktop" }).random;
 
   constructor(options?: LyricOptions) {
-    const plugins = Object.values(built_in_plugins);
+    const plugins: LyricScraper[] = Object.values(built_in_plugins);
 
     if (options?.plugins) {
       if (!Array.isArray(options.plugins)) {
@@ -61,29 +81,39 @@ export class Lyricist {
         plugin
       );
     }
+
+    if (options?.saveLastResult) {
+      this.#saveLastResult = true;
+    }
   }
 
-  async fetch(query: string, attempt?: number) {
+  /**
+   * Fetch a lyric by query; minimum recommended delay: 3s
+   * @param query Name of the song or full query
+   * @param attempt Number of attempts to make if Google doesn't have the lyric
+   * @returns {Promise<LyricResult>}
+   */
+  async fetch(query: string, attempt?: number): Promise<LyricResult> {
     if (
-      typeof this.lastCall === "number" &&
-      Date.now() - this.lastCall <= 3_000
+      typeof this.#lastCall === "number" &&
+      Date.now() - this.#lastCall <= 3_000
     ) {
       throw new Error("Spam. You should delay every request by atleast 3s");
     }
+
+    this.#lastCall = Date.now();
 
     const queryUrl = `https://www.google.com/search?q=${encodeURIComponent(
       query.concat(" lyrics")
     )}`;
 
-    const userAgent = this.randomUserAgent().toString();
+    const userAgent = this.#randomUserAgent().toString();
 
     const { data } = await get(queryUrl, {
       headers: {
         "User-Agent": userAgent
       }
     });
-
-    this.lastCall = Date.now();
 
     const $ = load(data);
 
@@ -156,16 +186,16 @@ export class Lyricist {
 
     if (lyrics.length !== 0) {
       searchResult.lyrics = lyrics.join("\n").trim();
-    }
 
-    if (
-      typeof searchResult.lyrics === "string" &&
-      searchResult.lyrics.length !== 0
-    ) {
       searchResult.source = {
-        name: "google",
+        name: "google.com",
         url: queryUrl
       };
+
+      if (this.#saveLastResult) {
+        this.lastResult = searchResult;
+      }
+
       return searchResult;
     }
 
@@ -233,6 +263,10 @@ export class Lyricist {
 
     searchResult.lyrics = result.lyrics;
     searchResult.source = result.source;
+
+    if (this.#saveLastResult) {
+      this.lastResult = searchResult;
+    }
 
     return searchResult;
   }
