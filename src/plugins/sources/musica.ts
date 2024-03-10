@@ -1,0 +1,39 @@
+import { get } from "axios";
+import { load } from "cheerio";
+
+export async function musica_com(url: string, userAgent: string) {
+  try {
+    const { data } = await get(url, {
+      headers: {
+        "User-Agent": userAgent
+      }
+    });
+
+    const $ = load(data);
+    const lyrics: string[] = [];
+
+    $("div[id=letra] > p").each((index, element) => {
+      const html = $(element).html()?.replace(/<br>/g, "\n");
+
+      if (typeof html !== "string") {
+        throw null;
+      }
+
+      const lyric = load(html).text().trim();
+
+      if (lyric.length === 0) {
+        throw null;
+      }
+
+      lyrics.push(lyric);
+    });
+
+    if (lyrics.length === 0) {
+      throw null;
+    }
+
+    return lyrics.join("\n\n");
+  } catch {
+    return Promise.reject();
+  }
+}
