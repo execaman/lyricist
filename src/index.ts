@@ -1,6 +1,6 @@
 import { get } from "axios";
 import UserAgent from "user-agents";
-import { load, type Element } from "cheerio";
+import { load } from "cheerio";
 import { URL } from "node:url";
 import * as built_in_plugins from "./plugins";
 
@@ -40,7 +40,11 @@ export interface LyricSource {
 
 /** A successful fetch result */
 export interface LyricResult {
-  meta?: LyricInfo[];
+  song?: {
+    title: string;
+    subtitle: string;
+  };
+  info?: LyricInfo[];
   listen?: LyricStream[];
   lyrics: string;
   source: LyricSource;
@@ -119,108 +123,118 @@ export class Lyricist {
 
     const searchResult = {} as LyricResult;
 
-    // Meta
-    const meta: LyricInfo[] = [];
+    // title & subtitle
+    {
+      const title = $("div[data-attrid=title]").text().trim();
 
-    const extractInfo = (index: number, element: Element) => {
-      const info = $(element);
+      const subtitle = $("div[data-attrid=subtitle]").text().trim();
 
-      const label = info.find("span:first").text().trim();
-      if (label.length === 0) return;
-
-      const value = info.find("span:nth-of-type(2):first").text().trim();
-      if (value.length === 0) return;
-
-      meta.push({ label, value });
-    };
-
-    $(`div[aria-label*=About i] div[data-attrid*=music]:has(span)`).each(
-      extractInfo
-    );
-
-    if (meta.length !== 0) {
-      searchResult.meta = meta;
+      if (title.length !== 0 && subtitle.length !== 0) {
+        searchResult.song = { title, subtitle };
+      }
     }
 
-    // Listen
-    const listen: LyricStream[] = [];
+    // info
+    {
+      const info: LyricInfo[] = [];
 
-    $("div[data-attrid*=action:listen] a:has(div)").each((index, element) => {
-      const source = $(element);
+      $("div[id=rhs] div[data-attrid*=music]").each((i, div) => {
+        const label = $(div).find("span:first").text().trim();
 
-      const sourcName = source
-        .find("div > div:nth-of-type(2):first > div:first")
-        .text()
-        .trim();
-      if (sourcName.length === 0) return;
+        const value = $(div).find("span:nth-of-type(2):first").text().trim();
 
-      const sourceUrl = source.attr("href");
-      if (typeof sourceUrl !== "string") return;
-
-      listen.push({
-        source: sourcName,
-        stream: sourceUrl
+        if (label.length !== 0 && value.length !== 0) {
+          info.push({ label, value });
+        }
       });
-    });
 
-    if (listen.length !== 0) {
-      searchResult.listen = listen;
+      if (info.length !== 0) {
+        searchResult.info = info;
+      }
     }
 
-    // Lyrics
-    const lyrics: string[] = [];
+    // listen
+    {
+      const listen: LyricStream[] = [];
 
-    $("div[data-lyricid] > div > div:nth-of-type(2) > div:has(span)").each(
-      (index, element) => {
-        let note = "";
+      $("div[data-attrid*=action:listen] a:has(div)").each((i, link) => {
+        const source = $(link)
+          .find("div:first > div:nth-of-type(2)")
+          .text()
+          .trim();
 
-        $(element)
+        const stream = $(link).attr("href") as string;
+
+        if (source.length !== 0) {
+          listen.push({ source, stream });
+        }
+      });
+
+      if (listen.length !== 0) {
+        searchResult.listen = listen;
+      }
+    }
+
+    // lyrics
+    {
+      const lyrics: string[] = [];
+
+      $(
+        "div[data-lyricid] > div:first > div:nth-of-type(2) > div:has(span)"
+      ).each((i, div) => {
+        let lyric = "";
+
+        $(div)
           .find("span")
-          .each((i, el) => {
-            note += $(el).text().trim().concat("\n");
+          .each((j, span) => {
+            lyric += $(span).text().trim().concat("\n");
           });
 
-        lyrics.push(note);
+        lyrics.push(lyric);
+      });
+
+      if (lyrics.length !== 0) {
+        searchResult.lyrics = lyrics.join("\n").trimEnd();
+
+        searchResult.source = {
+          name: "google.com",
+          url: queryUrl
+        };
+
+        if (this.#saveLastResult) {
+          this.lastResult = searchResult;
+        }
+
+        return searchResult;
       }
-    );
-
-    if (lyrics.length !== 0) {
-      searchResult.lyrics = lyrics.join("\n").trim();
-
-      searchResult.source = {
-        name: "google.com",
-        url: queryUrl
-      };
-
-      if (this.#saveLastResult) {
-        this.lastResult = searchResult;
-      }
-
-      return searchResult;
     }
 
-    // Other Results (Fallback Attempts)
+    // fallback attempts
     const results: LyricSource[] = [];
 
     const plugins = [...this.plugins.keys()];
 
-    $("[data-async-context*=query:] div > span > a").each((index, element) => {
-      const result = $(element).attr("href") as string;
+    $("div[data-async-context^=query:] div[data-snc] div > span > a").each(
+      (i, link) => {
+        const url = new URL($(link).attr("href") as string);
 
-      const url = new URL(result);
-      if (url.pathname.length <= 1) return;
-
-      for (const name of plugins) {
-        if (url.hostname.includes(name)) {
-          results.push({
-            name: name,
-            url: url.href
-          });
-          plugins.splice(plugins.indexOf(name), 1);
+        if (url.pathname.length <= 1) {
           return;
         }
+
+        for (const name of plugins) {
+          if (url.hostname.includes(name)) {
+            results.push({
+              name: name,
+              url: url.href
+            });
+
+            plugins.splice(plugins.indexOf(name), 1);
+            return;
+          }
+        }
       }
-    });
+    );
 
     if (results.length === 0) {
       throw new Error(
@@ -256,7 +270,8 @@ export class Lyricist {
           value: {
             type: typeof result.lyrics,
             name: result.lyrics?.constructor?.name
-          }
+          },
+          source: result.source
         }
       });
     }
