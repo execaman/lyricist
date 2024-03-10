@@ -11,3 +11,7 @@ export * from "./sources/lyrics";
 export * from "./sources/mojim";
 export * from "./sources/saregama";
 export * from "./sources/absolutelyrics";
+export * from "./sources/paroles-musique";
+export * from "./sources/songtexte";
+export * from "./sources/lyricsbox";
+export * from "./sources/musica";

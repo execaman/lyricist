@@ -140,11 +140,11 @@ So a function name like `karaoke__lyrics_com` would translate to `karaoke-lyrics
 
 <p>To write one yourself, you must know how it should behave:</p>
 
-- Do not use try-catch blocks, keep it simple
+- Use try-catch blocks, avoid [`throw`](https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Statements/throw)ing anything
 - Make sure to choose a site that has a good [DOM](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction) structure
 - Avoid hostname conflicts (e.g. abc.com <=> abc.com.br)
 - Avoid sites that include content other than lyrics and yet appear on Google
-- Reject or [`throw`](https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Statements/throw) anything as soon as you realise the result could be invalid
+- Either return lyrics, or [reject](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/reject) as soon as you realise the result could be invalid
 
 ### Resources
 
