@@ -1,3 +1,6 @@
+> [!NOTE]
+> This project is no longer being maintained. See the 'conclusion' section for more info.
+
 ## Import
 
 ```js
